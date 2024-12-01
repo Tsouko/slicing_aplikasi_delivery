@@ -4,67 +4,82 @@ import 'package:starbhak/Pages/HomePage.dart';
 import 'package:starbhak/Pages/AddPages.dart';
 
 void main() {
-  runApp(Myapp());
+  runApp(MyApp());
 }
 
-class Myapp extends StatelessWidget {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Starbak Mart',
+      title: 'Starbhak Mart',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: Navbarwidget(), 
+      home: NavbarWidget(),
     );
   }
 }
 
-class Navbarwidget extends StatefulWidget {
+class NavbarWidget extends StatefulWidget {
   @override
-  _NavbarwidgetState createState() => _NavbarwidgetState();
+  _NavbarWidgetState createState() => _NavbarWidgetState();
 }
 
-class _NavbarwidgetState extends State<Navbarwidget> {
-  int _currentIndex = 0; 
+class _NavbarWidgetState extends State<NavbarWidget> {
+  int _currentIndex = 0;
   bool _isNavBarVisible = true;
 
-  final List<Widget> _children = [
-    HomePage(),
+  final List<Widget> _pages = [
+    Homepage(),
     CartPage(),
-    AddPage(),
+    Addpage(),
   ];
 
   void onBarTapped(int index) {
     setState(() {
-      _currentIndex = index;  
-      _isNavBarVisible = false;
+      _currentIndex = index;
+      _isNavBarVisible = index != 2; 
     });
+  }
+
+  Future<bool> _onWillPop() async {
+    if (_currentIndex != 0) {
+      setState(() {
+        _currentIndex = 0; 
+        _isNavBarVisible = true;
+      });
+      return false; 
+    }
+    return true; 
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _children[_currentIndex], 
-      bottomNavigationBar: _isNavBarVisible
-      ? BottomNavigationBar(
-        currentIndex: _currentIndex, 
-        onTap: onBarTapped, 
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Cart',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.post_add),
-            label: 'Pesanan',
-          ),
-        ],
-      ): null,
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        body: _pages[_currentIndex],
+        bottomNavigationBar: _isNavBarVisible
+            ? BottomNavigationBar(
+                currentIndex: _currentIndex,
+                onTap: onBarTapped,
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.shopping_cart),
+                    label: 'Cart',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.post_add),
+                    label: 'Pesanan',
+                  ),
+                ],
+              )
+            : null,
+      ),
     );
   }
 }

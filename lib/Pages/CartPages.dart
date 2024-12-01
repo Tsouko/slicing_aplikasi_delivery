@@ -1,28 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:starbhak/Widget/NavbarWidget.dart'; 
+import 'package:starbhak/Widget/NavbarWidget.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class CartPage extends StatelessWidget {
+final supabase = Supabase.instance.client;
+
+class CartPage extends StatefulWidget {
+  const CartPage({super.key});
+
+  @override
+  State<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  Future<List<dynamic>> fetchData() async {
+    final List<Map<String, dynamic>> response =
+        await supabase.from('food').select('*');
+    return response as List<dynamic>;
+  }
+
+  Future<void> deleteData(int id) async {
+    await supabase.from('food').delete().eq('id', id);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    final mediaWidth = MediaQuery.of(context).size.width;
+    final mediaHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
         leading: IconButton(
-          icon: Icon(Icons.chevron_left, size: 24, color: Colors.black),    
+          icon: Icon(Icons.chevron_left,
+              size: mediaWidth * 0.06, color: Colors.black),
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => Navbarwidget()),
+              MaterialPageRoute(builder: (context) => NavbarWidget()),
             );
           },
         ),
         title: Text(
-          "Cart",
+          "Your Cart",
           style: GoogleFonts.inter(
-            fontSize: 22,
+            fontSize: mediaWidth * 0.06,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
@@ -30,198 +55,163 @@ class CartPage extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(CupertinoIcons.person, color: Colors.black, size: 24),
-            onPressed: () {
-              // Tambahkan aksi yang diinginkan di sini
-            },
+            icon: Icon(CupertinoIcons.person,
+                color: Colors.black, size: mediaWidth * 0.06),
+            onPressed: () {},
           ),
         ],
       ),
-      
-      body: Padding(
-        padding: EdgeInsets.only(top: 40, left: 20, right: 20),
-        child: Column(
-          children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: SizedBox(
-                  height: 120,
-                  width: 120,
-                  child: Image.asset('assets/burger.png', fit: BoxFit.cover),
-                ),
-              ),
-              SizedBox(width: 15),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 5),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "Burger King Medium",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Spacer(),
-                          Icon(CupertinoIcons.trash, size: 24, color: Colors.red),
-                        ],
-                      ),
-                      Text(
-                        "Rp.50.000,00",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: mediaHeight * 0.02,
+            horizontal: mediaWidth * 0.05,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FutureBuilder<List<dynamic>>(
+                future: fetchData(),
+                builder: (BuildContext context,
+                    AsyncSnapshot<List<dynamic>> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'Your cart is empty!',
+                        style: GoogleFonts.inter(
+                          fontSize: mediaWidth * 0.05,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(CupertinoIcons.minus_circled, size: 24, color: Colors.black),
-                          SizedBox(width: 5),
-                          Text(
-                            "1",
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.normal,
-                              fontSize: 18,
-                              color: Colors.black,
+                    );
+                  } else {
+                    final List<dynamic> data = snapshot.data!;
+                    return ListView.separated(
+                      physics: NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: data.length,
+                      separatorBuilder: (context, index) =>
+                          SizedBox(height: mediaHeight * 0.01),
+                      itemBuilder: (context, index) {
+                        final item = data[index];
+                        final imageUrl = item['image_url'] ??
+                            'https://via.placeholder.com/150';
+                        return Card(
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 3,
+                          child: Padding(
+                            padding: EdgeInsets.all(mediaWidth * 0.04),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    imageUrl,
+                                    width: mediaWidth * 0.2,
+                                    height: mediaWidth * 0.2,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(Icons.broken_image),
+                                  ),
+                                ),
+                                SizedBox(width: mediaWidth * 0.04),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item['name'] ?? 'No Name',
+                                        style: GoogleFonts.inter(
+                                          fontSize: mediaWidth * 0.045,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: mediaHeight * 0.005),
+                                      Text(
+                                        "Rp. ${item['price'] ?? '0'}",
+                                        style: GoogleFonts.inter(
+                                          fontSize: mediaWidth * 0.04,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(CupertinoIcons.trash,
+                                      color: Colors.red),
+                                  onPressed: () async {
+                                    final id = item['id'];
+                                    await deleteData(id);
+                                  },
+                                ),
+                              ],
                             ),
                           ),
-                          SizedBox(width: 5),
-                          Icon(CupertinoIcons.plus_circled, size: 24, color: Colors.black),
-                        ],
-                      ),
-                    ],
+                        );
+                      },
+                    );
+                  }
+                },
+              ),
+              SizedBox(height: mediaHeight * 0.03),
+              Divider(color: Colors.grey),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Total Payment",
+                    style: GoogleFonts.inter(
+                      fontSize: mediaWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "Rp.104.000,00",
+                    style: GoogleFonts.inter(
+                      fontSize: mediaWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: mediaHeight * 0.02),
+              SizedBox(
+                width: double.infinity,
+                height: mediaHeight * 0.06,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  onPressed: () {
+                    // Logika checkout
+                  },
+                  child: Text(
+                    "Checkout",
+                    style: GoogleFonts.inter(
+                      fontSize: mediaWidth * 0.05,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
-            ]),
-            SizedBox(height: 30),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: SizedBox(
-                  height: 120,
-                  width: 120,
-                  child: Image.asset('assets/teh.png', fit: BoxFit.cover),
-                ),
-              ),
-              SizedBox(width: 15),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 5),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "Teh Botol Sosro",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Spacer(),
-                          Icon(CupertinoIcons.trash, size: 24, color: Colors.red),
-                        ],
-                      ),
-                      Text(
-                        "Rp.4.000,00",
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(CupertinoIcons.minus_circle, size: 24, color: Colors.black),
-                          SizedBox(width: 5),
-                          Text(
-                            "1",
-                            style: GoogleFonts.inter(
-                              fontWeight: FontWeight.normal,
-                              fontSize: 18,
-                              color: Colors.black,
-                            ),
-                          ),
-                          SizedBox(width: 5),
-                          Icon(CupertinoIcons.plus_circled, size: 24, color: Colors.black),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ]),
-            SizedBox(height: 200),
-            Divider(color: Colors.black), 
-            SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Total Belanja",
-                  style: TextStyle(color: Colors.black, fontSize: 18),
-                ),
-                Text(
-                  "Rp.94.000,00",
-                  style: TextStyle(color: Colors.black, fontSize: 18),
-                )
-              ],
-            ),
-            SizedBox(height: 30),
-            Divider(color: Colors.grey, thickness: 1),
-            SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Total Pembayaran",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  "Rp.104.000,00",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 70),
-            Container(
-              height: 50,
-              width: MediaQuery.of(context).size.width,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Color.fromARGB(255, 36, 109, 235),
-              ),
-              child: Center(
-                child: Text(
-                  "Checkout",
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-          ],
+            ],
+          ),
         ),
       ),
     );
